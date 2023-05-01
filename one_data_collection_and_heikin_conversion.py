@@ -84,8 +84,6 @@ def get_spy_normal_price_data_table_details(db_user, db_password):
 
 
 def calculate_heikin_ashi(db_user, db_password):
-
-
     try:
         connection = mysql.connector.connect(
             host='localhost',
@@ -105,7 +103,8 @@ def calculate_heikin_ashi(db_user, db_password):
     normal_prices_df = pd.DataFrame(data)
     normal_prices_df.set_index(pd.to_datetime(normal_prices_df['Date']), inplace=True)
 
-    heikin_ashi_prices_df = pd.DataFrame(index=normal_prices_df.index, columns=['HA_Open', 'HA_High', 'HA_Low', 'HA_Close'])
+    heikin_ashi_prices_df = pd.DataFrame(index=normal_prices_df.index,
+                                         columns=['HA_Open', 'HA_High', 'HA_Low', 'HA_Close'])
 
     heikin_ashi_prices_df.loc[pd.Timestamp('2022-12-30')] = {
         'HA_Open': 381.11,
@@ -145,6 +144,39 @@ def calculate_heikin_ashi(db_user, db_password):
     return heikin_ashi_prices_df
 
 
+def store_heikin_ashi_data(heikin_ashi_prices_df, db_user, db_password):
+    print("Connecting to the database...")
+    try:
+        connection = mysql.connector.connect(
+            host='localhost',
+            user=db_user,
+            password=db_password,
+            database='spy_ohlc'
+        )
+    except mysql.connector.Error as err:
+        print(f"Error connecting to the database: {err}")
+        return
+
+    print("Connected to the database successfully.")
+    cursor = connection.cursor()
+
+    for index, row in heikin_ashi_prices_df.iterrows():
+        date = index.strftime('%Y-%m-%d')
+        ha_open, ha_high, ha_low, ha_close = row['HA_Open'], row['HA_High'], row['HA_Low'], row['HA_Close']
+
+        query = f"INSERT INTO spy_heikin_ashi_price_data (Date, Open, High, Low, Close) " \
+                f"VALUES ('{date}', {ha_open}, {ha_high}, {ha_low}, {ha_close}) " \
+                f"ON DUPLICATE KEY UPDATE Open = {ha_open}, High = {ha_high}, Low = {ha_low}, Close = {ha_close};"
+
+        cursor.execute(query)
+
+    print("Heikin-Ashi prices stored successfully. Committing changes to the database.")
+    connection.commit()
+    cursor.close()
+    connection.close()
+    print("Database connection closed.")
+
+
 def main_data_collection_and_heikin_conversion():
     # Define the ticker symbol and the time range for the data
     ticker = 'SPY'
@@ -167,6 +199,9 @@ def main_data_collection_and_heikin_conversion():
     # Call the calculate_heikin_ashi function
     ha_prices = calculate_heikin_ashi(db_user, db_password)
     print(ha_prices)
+
+    # Call the store_heikin_ashi_data function
+    store_heikin_ashi_data(ha_prices, db_user, db_password )
 
 
 # Call the main_data_collection function
