@@ -105,15 +105,32 @@ def calculate_heikin_ashi(db_user, db_password):
 
     heikin_ashi_prices_df = pd.DataFrame(index=normal_prices_df.index,
                                          columns=['HA_Open', 'HA_High', 'HA_Low', 'HA_Close'])
+    # # SPY
+    # heikin_ashi_prices_df.loc[pd.Timestamp('2019-12-31')] = {
+    #     'HA_Open': 322.17,
+    #     'HA_High': 322.17,
+    #     'HA_Low': 320.15,
+    #     'HA_Close': 321.17
+    # }
+    # 0322.17 H322.17 L320.15 C321.17
 
-    heikin_ashi_prices_df.loc[pd.Timestamp('2022-12-30')] = {
-        'HA_Open': 381.11,
-        'HA_High': 382.58,
-        'HA_Low': 378.43,
-        'HA_Close': 381.02
+    # # TSLA
+    # heikin_ashi_prices_df.loc[pd.Timestamp('2019-12-31')] = {
+    #     'HA_Open': 28.24,
+    #     'HA_High': 28.24,
+    #     'HA_Low': 26.81,
+    #     'HA_Close': 27.44
+    # }
+
+    # AAPL 0 72.20 H73.42 L72.20 C72.92
+    heikin_ashi_prices_df.loc[pd.Timestamp('2019-12-31')] = {
+        'HA_Open': 72.20,
+        'HA_High': 73.42,
+        'HA_Low': 72.20,
+        'HA_Close': 72.92
     }
 
-    for index, row in normal_prices_df.iterrows():
+    for index, row in normal_prices_df.iloc[1:].iterrows():
         open_price, high_price, low_price, close_price = row['Open'], row['High'], row['Low'], row['Close']
 
         # Get the previous valid date in heikin_ashi_prices_df
@@ -127,8 +144,8 @@ def calculate_heikin_ashi(db_user, db_password):
 
         # Convert decimal.Decimal to float
         ha_open = (float(previous_ha_open) + float(previous_ha_close)) / 2
-        ha_high = max(high_price, ha_open, close_price)
-        ha_low = min(low_price, ha_open, close_price)
+        ha_high = max(float(high_price), ha_open, float(close_price))
+        ha_low = min(float(low_price), ha_open, float(close_price))
         ha_close = (open_price + high_price + low_price + close_price) / 4
 
         heikin_ashi_prices_df.loc[index] = {
@@ -162,7 +179,8 @@ def store_heikin_ashi_data(heikin_ashi_prices_df, db_user, db_password):
 
     for index, row in heikin_ashi_prices_df.iterrows():
         date = index.strftime('%Y-%m-%d')
-        ha_open, ha_high, ha_low, ha_close = row['HA_Open'], row['HA_High'], row['HA_Low'], row['HA_Close']
+        ha_open, ha_high, ha_low, ha_close = ('NULL' if pd.isna(val) else val for val in
+                                              (row['HA_Open'], row['HA_High'], row['HA_Low'], row['HA_Close']))
 
         query = f"INSERT INTO spy_heikin_ashi_price_data (Date, Open, High, Low, Close) " \
                 f"VALUES ('{date}', {ha_open}, {ha_high}, {ha_low}, {ha_close}) " \
@@ -179,8 +197,8 @@ def store_heikin_ashi_data(heikin_ashi_prices_df, db_user, db_password):
 
 def main_data_collection_and_heikin_conversion():
     # Define the ticker symbol and the time range for the data
-    ticker = 'SPY'
-    start_date = '2023-01-01'
+    ticker = 'AAPL'
+    start_date = '2020-01-01'
     end_date = '2023-04-29'
 
     # Call the function to fetch the data
