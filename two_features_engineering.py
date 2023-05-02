@@ -154,7 +154,7 @@ def print_stats_open_low_difference_go_long(stats):
         print(f"    {date}")
 
 
-def main_features_engineering( start_date, end_date, min_diff, max_diff):
+def main_features_engineering(start_date, end_date, min_diff, max_diff):
     # Call the fetch_heikin_ashi_data function
     db_user = os.environ['DB_USER'] = 'root'
     db_password = os.environ['DB_PASSWORD'] = '2020$2020$ABC'
