@@ -83,7 +83,7 @@ def get_spy_normal_price_data_table_details(db_user, db_password):
     print("Verification completed. Connection closed!\n")
 
 
-def calculate_heikin_ashi(db_user, db_password):
+def calculate_heikin_ashi(db_user, db_password, initial_ha_open, initial_ha_high, initial_ha_low, initial_ha_close):
     try:
         connection = mysql.connector.connect(
             host='localhost',
@@ -105,35 +105,17 @@ def calculate_heikin_ashi(db_user, db_password):
 
     heikin_ashi_prices_df = pd.DataFrame(index=normal_prices_df.index,
                                          columns=['HA_Open', 'HA_High', 'HA_Low', 'HA_Close'])
-    # # SPY
-    # heikin_ashi_prices_df.loc[pd.Timestamp('2019-12-31')] = {
-    #     'HA_Open': 322.17,
-    #     'HA_High': 322.17,
-    #     'HA_Low': 320.15,
-    #     'HA_Close': 321.17
-    # }
-    # 0322.17 H322.17 L320.15 C321.17
 
-    # # TSLA
-    # heikin_ashi_prices_df.loc[pd.Timestamp('2019-12-31')] = {
-    #     'HA_Open': 28.24,
-    #     'HA_High': 28.24,
-    #     'HA_Low': 26.81,
-    #     'HA_Close': 27.44
-    # }
-
-    # AAPL 0 72.20 H73.42 L72.20 C72.92
     heikin_ashi_prices_df.loc[pd.Timestamp('2019-12-31')] = {
-        'HA_Open': 72.20,
-        'HA_High': 73.42,
-        'HA_Low': 72.20,
-        'HA_Close': 72.92
+        'HA_Open': initial_ha_open,
+        'HA_High': initial_ha_high,
+        'HA_Low': initial_ha_low,
+        'HA_Close': initial_ha_close
     }
 
     for index, row in normal_prices_df.iloc[1:].iterrows():
         open_price, high_price, low_price, close_price = row['Open'], row['High'], row['Low'], row['Close']
 
-        # Get the previous valid date in heikin_ashi_prices_df
         previous_date = heikin_ashi_prices_df.index.get_loc(index) - 1
         previous_date = heikin_ashi_prices_df.index[previous_date]
 
@@ -142,7 +124,6 @@ def calculate_heikin_ashi(db_user, db_password):
         previous_ha_open, previous_ha_high, previous_ha_low, previous_ha_close = \
             previous_row['HA_Open'], previous_row['HA_High'], previous_row['HA_Low'], previous_row['HA_Close']
 
-        # Convert decimal.Decimal to float
         ha_open = (float(previous_ha_open) + float(previous_ha_close)) / 2
         ha_high = max(float(high_price), ha_open, float(close_price))
         ha_low = min(float(low_price), ha_open, float(close_price))
@@ -195,11 +176,16 @@ def store_heikin_ashi_data(heikin_ashi_prices_df, db_user, db_password):
     print("Database connection closed.")
 
 
-def main_data_collection_and_heikin_conversion():
+def main_data_collection_and_heikin_conversion(ticker, start_date, end_date,
+                                               initial_ha_open, initial_ha_high, initial_ha_low, initial_ha_close):
     # Define the ticker symbol and the time range for the data
-    ticker = 'AAPL'
-    start_date = '2020-01-01'
-    end_date = '2023-04-29'
+    ticker = ticker
+    start_date = start_date
+    end_date = end_date
+    initial_ha_open = initial_ha_open
+    initial_ha_high = initial_ha_high
+    initial_ha_low = initial_ha_low
+    initial_ha_close = initial_ha_close
 
     # Call the function to fetch the data
     spy_price_data = fetch_price_data(ticker, start_date, end_date)
@@ -215,11 +201,13 @@ def main_data_collection_and_heikin_conversion():
     get_spy_normal_price_data_table_details(db_user, db_password)
 
     # Call the calculate_heikin_ashi function
-    ha_prices = calculate_heikin_ashi(db_user, db_password)
+    ha_prices = calculate_heikin_ashi(db_user, db_password,
+                                      initial_ha_open, initial_ha_high, initial_ha_low, initial_ha_close)
+
     print(ha_prices)
 
     # Call the store_heikin_ashi_data function
-    store_heikin_ashi_data(ha_prices, db_user, db_password )
+    store_heikin_ashi_data(ha_prices, db_user, db_password)
 
 
 # Call the main_data_collection function
