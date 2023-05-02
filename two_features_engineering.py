@@ -26,13 +26,15 @@ def open_high_difference_stats_go_short(db_user, db_password, start_date, end_da
     ohlc_data = fetch_heikin_ashi_data(db_user, db_password, start_date, end_date)
     total_days = len(ohlc_data)
     filtered_days = []
+    signal_dates = []  # Add this line to store the signal dates
 
     for index, row in ohlc_data.iterrows():
-        open_price, high_price = row['Open'], row['High']
+        open_price, high_price, date = row['Open'], row['High'], row['Date']
         difference = high_price - open_price
 
         if min_diff < difference < max_diff:
             filtered_days.append(difference)
+            signal_dates.append(date)  # Add this line to store the date for each signal
 
     signal_count = len(filtered_days)
     percentage = (signal_count / total_days) * 100 if total_days > 0 else 0
@@ -59,13 +61,15 @@ def open_high_difference_stats_go_short(db_user, db_password, start_date, end_da
         'min_diff_observed': min_diff_observed,
         'max_diff_observed': max_diff_observed,
         'median_diff': median_diff,
+        'signal_dates': signal_dates,  # Add this line
+
     }
 
     return stats
 
 
 def print_stats_open_high_difference_go_short(stats):
-    print("Open-High Difference Statistics (GO Short):")
+    print("Open-High Difference Statistics (Go Short):")
     print(f"  Total trading days: {stats['total_days']}")
     print(f"  Signal days: {stats['signal_count']}")
     print(f"  Percentage of total days: {stats['percentage']:.2f}%")
@@ -79,19 +83,24 @@ def print_stats_open_high_difference_go_short(stats):
           if stats['max_diff_observed'] is not None else "  Maximum difference observed: N/A")
     print(f"  Median difference: {stats['median_diff']:.4f}"
           if stats['median_diff'] is not None else "  Median difference: N/A")
+    print("  Signal dates:")
+    for date in stats['signal_dates']:
+        print(f"    {date}")
 
 
 def open_low_difference_stats_go_long(db_user, db_password, start_date, end_date, min_diff, max_diff):
     ohlc_data = fetch_heikin_ashi_data(db_user, db_password, start_date, end_date)
     total_days = len(ohlc_data)
     filtered_days = []
+    signal_dates = []
 
     for index, row in ohlc_data.iterrows():
-        open_price, low_price = row['Open'], row['Low']
+        open_price, low_price, date = row['Open'], row['Low'], row['Date']
         difference = open_price - low_price
 
         if min_diff < difference < max_diff:
             filtered_days.append(difference)
+            signal_dates.append(date)
 
     signal_count = len(filtered_days)
     percentage = (signal_count / total_days) * 100 if total_days > 0 else 0
@@ -118,6 +127,8 @@ def open_low_difference_stats_go_long(db_user, db_password, start_date, end_date
         'min_diff_observed': min_diff_observed,
         'max_diff_observed': max_diff_observed,
         'median_diff': median_diff,
+        'signal_dates': signal_dates,
+
     }
 
     return stats
@@ -138,18 +149,21 @@ def print_stats_open_low_difference_go_long(stats):
           if stats['max_diff_observed'] is not None else "  Maximum difference observed: N/A")
     print(f"  Median difference: {stats['median_diff']:.4f}"
           if stats['median_diff'] is not None else "  Median difference: N/A")
+    print("  Signal dates:")
+    for date in stats['signal_dates']:
+        print(f"    {date}")
 
 
-def main():
+def main_features_engineering(start_date, end_date, min_diff, max_diff):
     # Call the fetch_heikin_ashi_data function
     db_user = os.environ['DB_USER'] = 'root'
     db_password = os.environ['DB_PASSWORD'] = '2020$2020$ABC'
 
     # parameters
-    start_date = '2023-01-01'
-    end_date = '2024-01-01'
-    min_diff = 0.01
-    max_diff = 0.2
+    start_date = start_date
+    end_date = end_date
+    min_diff = min_diff
+    max_diff = max_diff
 
     # GO Short
     # Call the open_high_difference_stats_go_short function
@@ -168,4 +182,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main_features_engineering()
